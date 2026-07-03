@@ -1,0 +1,14 @@
+{
+  "name": "naigua-douyin-link-probe-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Minimal WebSocket room server for Douyin mini-game 4-player link probe.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
