@@ -2,7 +2,7 @@ const crypto = require("crypto");
 const http = require("http");
 
 const PORT = Number(process.env.PORT || 8080);
-const TICK_MS = 100;
+const TICK_MS = 50;
 const ROOM_LIMIT = 4;
 const WORLD_W = 2200;
 const WORLD_H = 720;
@@ -186,6 +186,19 @@ function handle(client, msg) {
     player.updatedAt = Date.now();
   }
 
+  if (msg.type === "shot") {
+    const room = rooms.get(client.roomCode);
+    const player = room ? room.players.get(client.id) : null;
+    if (!room || !player) return;
+    player.updatedAt = Date.now();
+    broadcast(room, {
+      type: "shot",
+      playerId: client.id,
+      bullets: cleanBullets(msg.bullets),
+      now: Date.now(),
+    });
+  }
+
   if (msg.type === "ping") {
     send(client, { type: "pong", now: Date.now() });
   }
@@ -293,6 +306,36 @@ function cleanName(value) {
 function cleanToken(value, fallback) {
   const text = String(value || "");
   return /^[a-zA-Z0-9_-]{1,32}$/.test(text) ? text : fallback;
+}
+
+function cleanBullets(value) {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 12).map((bullet) => ({
+    x: clamp(Number(bullet.x), -100, WORLD_W + 100),
+    y: clamp(Number(bullet.y), -100, WORLD_H + 100),
+    vx: clamp(Number(bullet.vx), -1800, 1800),
+    vy: clamp(Number(bullet.vy), -1200, 1200),
+    weapon: cleanToken(bullet.weapon, "milkPistol"),
+    ttl: clamp(Number(bullet.ttl), 80, 1600),
+    damage: clamp(Number(bullet.damage), 0, 3),
+    knockback: clamp(Number(bullet.knockback), 0, 1000),
+    knockUp: clamp(Number(bullet.knockUp), -700, 200),
+    radius: clamp(Number(bullet.radius), 3, 18),
+    blast: clamp(Number(bullet.blast), 0, 90),
+    bounces: clamp(Number(bullet.bounces), 0, 3),
+    fuel: clamp(Number(bullet.fuel), 0, 700),
+    wobbleAmp: clamp(Number(bullet.wobbleAmp), 0, 8),
+    wobbleRate: clamp(Number(bullet.wobbleRate), 0, 2),
+    color: cleanColor(bullet.color),
+    length: clamp(Number(bullet.length), 12, 220),
+    headWidth: clamp(Number(bullet.headWidth), 4, 28),
+    tailWidth: clamp(Number(bullet.tailWidth), 2, 14),
+  }));
+}
+
+function cleanColor(value) {
+  const text = String(value || "#ff9f1c");
+  return /^#[0-9a-fA-F]{6}$/.test(text) ? text : "#ff9f1c";
 }
 
 function clamp(value, min, max) {
