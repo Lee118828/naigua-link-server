@@ -258,6 +258,7 @@ function handle(client, msg) {
     const hp = Number(msg.hp);
     if (Number.isFinite(hp)) player.hp = clamp(hp, 0, 5);
     player.facing = Number(msg.facing) < 0 ? -1 : 1;
+    player.weaponRaise = clamp(Number(msg.weaponRaise), 0, 1);
     player.seq = Number(msg.seq) || player.seq;
     player.updatedAt = Date.now();
   }
@@ -412,6 +413,7 @@ function broadcastState(room) {
       weapon: player.weapon,
       hp: player.hp,
       facing: player.facing,
+      weaponRaise: player.weaponRaise || 0,
       seq: player.seq,
       age: Date.now() - player.updatedAt,
     })),
