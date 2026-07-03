@@ -21,7 +21,7 @@ const CRATE_SPAWNS = [
   { id: "crate-c", x: MAP_OFFSET_X + 980, y: 378 },
   { id: "crate-d", x: MAP_OFFSET_X + 1170, y: 476 },
 ];
-const WEAPON_POOL = ["smg", "spraySmg", "rifle", "shotgun", "sawedShotgun", "rocket", "bounce", "odin", "bigSniper"];
+const WEAPON_POOL = ["smg", "tomson", "spraySmg", "rifle", "burstRifle", "shotgun", "sawedShotgun", "rocket", "bounce", "odin", "bigSniper"];
 const rooms = new Map();
 
 const server = http.createServer((req, res) => {
