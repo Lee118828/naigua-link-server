@@ -28,7 +28,7 @@ const server = http.createServer((req, res) => {
   if (url.pathname === "/health") {
     respondJson(res, 200, {
       ok: true,
-      version: "playable-v1",
+      version: "skills-v1",
       tickMs: TICK_MS,
       rooms: rooms.size,
       players: [...rooms.values()].reduce((sum, room) => sum + room.players.size, 0),
@@ -237,6 +237,21 @@ function handle(client, msg) {
     const player = room ? room.players.get(client.id) : null;
     if (!room || !player) return;
     pickupItem(room, player, cleanToken(msg.kind, ""), cleanToken(msg.id, ""));
+  }
+
+  if (msg.type === "skill" || msg.type === "ult") {
+    const room = rooms.get(client.roomCode);
+    const player = room ? room.players.get(client.id) : null;
+    if (!room || !player) return;
+    broadcast(room, {
+      type: msg.type,
+      playerId: client.id,
+      role: cleanToken(msg.role, player.role),
+      x: clamp(Number(msg.x), -100, WORLD_W + 100),
+      y: clamp(Number(msg.y), -100, WORLD_H + 100),
+      facing: Number(msg.facing) < 0 ? -1 : 1,
+      now: Date.now(),
+    });
   }
 
   if (msg.type === "ping") {
