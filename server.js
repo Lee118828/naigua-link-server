@@ -17,7 +17,7 @@ const ORB_SPAWNS = [
 ];
 const CRATE_SPAWNS = [
   { id: "crate-a", x: MAP_OFFSET_X + 270, y: 476 },
-  { id: "crate-b", x: MAP_OFFSET_X + 460, y: 378 },
+  { id: "crate-b", x: MAP_OFFSET_X + 460, y: 378, weaponId: "sawedShotgun", fixed: true },
   { id: "crate-c", x: MAP_OFFSET_X + 980, y: 378 },
   { id: "crate-d", x: MAP_OFFSET_X + 1170, y: 476 },
 ];
@@ -327,7 +327,7 @@ function join(client, roomCode, name) {
       updatedAt: Date.now(),
       players: new Map(),
       orbs: ORB_SPAWNS.map((item) => ({ ...item, active: true, respawnAt: 0 })),
-      crates: CRATE_SPAWNS.map((item) => ({ ...item, weaponId: randomWeapon(), active: true, respawnAt: 0 })),
+      crates: CRATE_SPAWNS.map((item) => ({ ...item, weaponId: item.weaponId || randomWeapon(), active: true, respawnAt: 0 })),
     };
     rooms.set(roomCode, room);
   }
@@ -448,7 +448,7 @@ function stepItems(room) {
   for (const crate of room.crates) {
     if (!crate.active && now >= crate.respawnAt) {
       crate.active = true;
-      crate.weaponId = randomWeapon();
+      if (!crate.fixed) crate.weaponId = randomWeapon();
       crate.respawnAt = 0;
     }
   }
