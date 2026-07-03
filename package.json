@@ -5,6 +5,8 @@
   "description": "Minimal WebSocket room server for Douyin mini-game 4-player link probe.",
   "main": "server.js",
   "scripts": {
+    "build": "node --check server.js",
+    "serve": "node server.js",
     "start": "node server.js",
     "check": "node --check server.js"
   },

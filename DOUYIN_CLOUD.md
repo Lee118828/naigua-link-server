@@ -6,9 +6,10 @@ Use this service as the temporary room server for the Naigua 2-4 player test.
 
 - Runtime: Node.js 18 or newer
 - Start command: `npm start`
-- Port: `8080`
+- Port: `8000`
 - Health check path: `/health`
 - WebSocket path: `/ws`
+- HTTP test path: `/example`
 
 ## Client URL
 
@@ -33,7 +34,7 @@ Expected shape:
 ```json
 {
   "ok": true,
-  "version": "douyin-cloud-ready-v1",
+  "version": "douyin-cloud-ready-v2",
   "tickMs": 33
 }
 ```

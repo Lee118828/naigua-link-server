@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 const http = require("http");
 
-const PORT = Number(process.env.PORT || 8080);
+const PORT = Number(process.env.PORT || 8000);
 const TICK_MS = 33;
 const STALE_PLAYER_MS = 12000;
 const ROOM_LIMIT = 4;
@@ -26,14 +26,33 @@ const rooms = new Map();
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
+  if (req.method === "OPTIONS") {
+    respondJson(res, 204, {});
+    return;
+  }
+
   if (url.pathname === "/health") {
     respondJson(res, 200, {
       ok: true,
-      version: "douyin-cloud-ready-v1",
+      version: "douyin-cloud-ready-v2",
       tickMs: TICK_MS,
       rooms: rooms.size,
       players: [...rooms.values()].reduce((sum, room) => sum + room.players.size, 0),
       now: Date.now(),
+    });
+    return;
+  }
+
+  if (url.pathname === "/example") {
+    collectJson(req, (body) => {
+      respondJson(res, 200, {
+        ok: true,
+        version: "douyin-cloud-ready-v2",
+        echo: body,
+        websocket: "/ws",
+        health: "/health",
+        now: Date.now(),
+      });
     });
     return;
   }
@@ -114,8 +133,35 @@ function respondJson(res, status, data) {
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
     "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
   });
-  res.end(JSON.stringify(data));
+  res.end(status === 204 ? "" : JSON.stringify(data));
+}
+
+function collectJson(req, done) {
+  if (req.method !== "POST") {
+    done(null);
+    return;
+  }
+
+  let raw = "";
+  req.on("data", (chunk) => {
+    raw += chunk;
+    if (raw.length > 65536) req.destroy();
+  });
+  req.on("end", () => {
+    if (!raw) {
+      done(null);
+      return;
+    }
+    try {
+      done(JSON.parse(raw));
+    } catch (error) {
+      done({ raw });
+    }
+  });
+  req.on("error", () => done(null));
 }
 
 function readFrames(client) {
