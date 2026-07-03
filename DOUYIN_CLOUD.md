@@ -6,6 +6,7 @@ Use this service as the temporary room server for the Naigua 2-4 player test.
 
 - Runtime: Node.js 18 or newer
 - Start command: `npm start`
+- FaaS run script: `run.sh`
 - Port: `8000`
 - Health check path: `/health`
 - WebSocket path: `/ws`

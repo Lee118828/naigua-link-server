@@ -1,6 +1,7 @@
 FROM node:20-alpine
-WORKDIR /app
-COPY package.json server.js ./
+WORKDIR /opt/application
+COPY package.json server.js run.sh ./
 ENV PORT=8000
 EXPOSE 8000
-CMD ["node", "server.js"]
+RUN chmod +x ./run.sh
+CMD ["./run.sh"]
