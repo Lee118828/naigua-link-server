@@ -502,6 +502,7 @@ function cleanBullets(value) {
     vx: clamp(Number(bullet.vx), -1800, 1800),
     vy: clamp(Number(bullet.vy), -1200, 1200),
     weapon: cleanToken(bullet.weapon, "milkPistol"),
+    volleyId: cleanToken(bullet.volleyId, ""),
     ttl: clamp(Number(bullet.ttl), 80, 1600),
     damage: clamp(Number(bullet.damage), 0, 5),
     knockback: clamp(Number(bullet.knockback), 0, 15000),
