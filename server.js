@@ -6,6 +6,21 @@ const TICK_MS = 50;
 const ROOM_LIMIT = 4;
 const WORLD_W = 2200;
 const WORLD_H = 720;
+const MAP_OFFSET_X = 260;
+const ORB_RESPAWN_MS = 9000;
+const CRATE_RESPAWN_MS = 15000;
+const ORB_SPAWNS = [
+  { id: "orb-a", x: MAP_OFFSET_X + 720, y: 500, value: 1 },
+  { id: "orb-b", x: MAP_OFFSET_X + 880, y: 306, value: 1 },
+  { id: "orb-c", x: MAP_OFFSET_X + 540, y: 500, value: 1 },
+];
+const CRATE_SPAWNS = [
+  { id: "crate-a", x: MAP_OFFSET_X + 270, y: 476 },
+  { id: "crate-b", x: MAP_OFFSET_X + 460, y: 378 },
+  { id: "crate-c", x: MAP_OFFSET_X + 980, y: 378 },
+  { id: "crate-d", x: MAP_OFFSET_X + 1170, y: 476 },
+];
+const WEAPON_POOL = ["smg", "spraySmg", "rifle", "shotgun", "sawedShotgun", "rocket", "bounce", "odin", "bigSniper"];
 const rooms = new Map();
 
 const server = http.createServer((req, res) => {
@@ -13,7 +28,7 @@ const server = http.createServer((req, res) => {
   if (url.pathname === "/health") {
     respondJson(res, 200, {
       ok: true,
-      version: "shots-v1",
+      version: "playable-v1",
       tickMs: TICK_MS,
       rooms: rooms.size,
       players: [...rooms.values()].reduce((sum, room) => sum + room.players.size, 0),
@@ -82,6 +97,7 @@ server.on("upgrade", (req, socket) => {
 
 setInterval(() => {
   for (const room of rooms.values()) {
+    stepItems(room);
     broadcastState(room);
   }
   cleanup();
@@ -201,6 +217,28 @@ function handle(client, msg) {
     });
   }
 
+  if (msg.type === "hit") {
+    const room = rooms.get(client.roomCode);
+    const player = room ? room.players.get(client.id) : null;
+    if (!room || !player) return;
+    broadcast(room, {
+      type: "hit",
+      sourceId: client.id,
+      targetId: cleanToken(msg.targetId, ""),
+      bullet: cleanBullets([msg.bullet])[0] || null,
+      x: clamp(Number(msg.x), -100, WORLD_W + 100),
+      y: clamp(Number(msg.y), -100, WORLD_H + 100),
+      now: Date.now(),
+    });
+  }
+
+  if (msg.type === "pickup") {
+    const room = rooms.get(client.roomCode);
+    const player = room ? room.players.get(client.id) : null;
+    if (!room || !player) return;
+    pickupItem(room, player, cleanToken(msg.kind, ""), cleanToken(msg.id, ""));
+  }
+
   if (msg.type === "ping") {
     send(client, { type: "pong", now: Date.now() });
   }
@@ -215,6 +253,8 @@ function join(client, roomCode, name) {
       createdAt: Date.now(),
       updatedAt: Date.now(),
       players: new Map(),
+      orbs: ORB_SPAWNS.map((item) => ({ ...item, active: true, respawnAt: 0 })),
+      crates: CRATE_SPAWNS.map((item) => ({ ...item, weaponId: randomWeapon(), active: true, respawnAt: 0 })),
     };
     rooms.set(roomCode, room);
   }
@@ -276,6 +316,18 @@ function broadcastState(room) {
   broadcast(room, {
     type: "state",
     room: room.code,
+    orbs: room.orbs.filter((item) => item.active).map((item) => ({
+      id: item.id,
+      x: item.x,
+      y: item.y,
+      value: item.value,
+    })),
+    crates: room.crates.filter((item) => item.active).map((item) => ({
+      id: item.id,
+      x: item.x,
+      y: item.y,
+      weaponId: item.weaponId,
+    })),
     players: [...room.players.values()].map((player) => ({
       id: player.id,
       slot: player.slot,
@@ -290,6 +342,52 @@ function broadcastState(room) {
       age: Date.now() - player.updatedAt,
     })),
   });
+}
+
+function pickupItem(room, player, kind, id) {
+  const now = Date.now();
+  if (kind === "orb") {
+    const item = room.orbs.find((orb) => orb.id === id && orb.active);
+    if (!item || distance(player, item) > 70) return;
+    item.active = false;
+    item.respawnAt = now + ORB_RESPAWN_MS;
+    broadcast(room, { type: "pickup", playerId: player.id, kind, id, value: item.value });
+    return;
+  }
+  if (kind === "crate") {
+    const item = room.crates.find((crate) => crate.id === id && crate.active);
+    if (!item || distance(player, item) > 80) return;
+    item.active = false;
+    item.respawnAt = now + CRATE_RESPAWN_MS;
+    broadcast(room, { type: "pickup", playerId: player.id, kind, id, weaponId: item.weaponId });
+  }
+}
+
+function stepItems(room) {
+  const now = Date.now();
+  for (const orb of room.orbs) {
+    if (!orb.active && now >= orb.respawnAt) {
+      orb.active = true;
+      orb.respawnAt = 0;
+    }
+  }
+  for (const crate of room.crates) {
+    if (!crate.active && now >= crate.respawnAt) {
+      crate.active = true;
+      crate.weaponId = randomWeapon();
+      crate.respawnAt = 0;
+    }
+  }
+}
+
+function distance(a, b) {
+  const dx = Number(a.x) - Number(b.x);
+  const dy = Number(a.y) - Number(b.y);
+  return Math.hypot(dx, dy);
+}
+
+function randomWeapon() {
+  return WEAPON_POOL[Math.floor(Math.random() * WEAPON_POOL.length)];
 }
 
 function cleanup() {
