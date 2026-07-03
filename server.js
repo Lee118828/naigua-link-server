@@ -16,7 +16,7 @@ const ORB_SPAWNS = [
   { id: "orb-c", x: MAP_OFFSET_X + 540, y: 500, value: 1 },
 ];
 const CRATE_SPAWNS = [
-  { id: "crate-a", x: MAP_OFFSET_X + 270, y: 476 },
+  { id: "crate-a", x: MAP_OFFSET_X + 270, y: 476, weaponId: "shotgun", fixed: true },
   { id: "crate-b", x: MAP_OFFSET_X + 460, y: 378, weaponId: "sawedShotgun", fixed: true },
   { id: "crate-c", x: MAP_OFFSET_X + 980, y: 378 },
   { id: "crate-d", x: MAP_OFFSET_X + 1170, y: 476 },
@@ -503,10 +503,10 @@ function cleanBullets(value) {
     vy: clamp(Number(bullet.vy), -1200, 1200),
     weapon: cleanToken(bullet.weapon, "milkPistol"),
     ttl: clamp(Number(bullet.ttl), 80, 1600),
-    damage: clamp(Number(bullet.damage), 0, 3),
-    knockback: clamp(Number(bullet.knockback), 0, 1000),
+    damage: clamp(Number(bullet.damage), 0, 5),
+    knockback: clamp(Number(bullet.knockback), 0, 15000),
     knockUp: clamp(Number(bullet.knockUp), -700, 200),
-    radius: clamp(Number(bullet.radius), 3, 18),
+    radius: clamp(Number(bullet.radius), 3, 36),
     blast: clamp(Number(bullet.blast), 0, 90),
     bounces: clamp(Number(bullet.bounces), 0, 3),
     fuel: clamp(Number(bullet.fuel), 0, 700),
