@@ -2,7 +2,7 @@ const crypto = require("crypto");
 const http = require("http");
 
 const PORT = Number(process.env.PORT || 8000);
-const TICK_MS = 33;
+const TICK_MS = 50;
 const STALE_PLAYER_MS = 12000;
 const ROOM_LIMIT = 4;
 const WORLD_W = 2200;
