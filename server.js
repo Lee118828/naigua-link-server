@@ -29,7 +29,7 @@ const server = http.createServer((req, res) => {
   if (url.pathname === "/health") {
     respondJson(res, 200, {
       ok: true,
-      version: "skills-v2",
+      version: "douyin-cloud-ready-v1",
       tickMs: TICK_MS,
       rooms: rooms.size,
       players: [...rooms.values()].reduce((sum, room) => sum + room.players.size, 0),
