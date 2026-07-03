@@ -2,7 +2,8 @@ const crypto = require("crypto");
 const http = require("http");
 
 const PORT = Number(process.env.PORT || 8080);
-const TICK_MS = 50;
+const TICK_MS = 33;
+const STALE_PLAYER_MS = 12000;
 const ROOM_LIMIT = 4;
 const WORLD_W = 2200;
 const WORLD_H = 720;
@@ -28,7 +29,7 @@ const server = http.createServer((req, res) => {
   if (url.pathname === "/health") {
     respondJson(res, 200, {
       ok: true,
-      version: "skills-v1",
+      version: "skills-v2",
       tickMs: TICK_MS,
       rooms: rooms.size,
       players: [...rooms.values()].reduce((sum, room) => sum + room.players.size, 0),
@@ -97,6 +98,8 @@ server.on("upgrade", (req, socket) => {
 
 setInterval(() => {
   for (const room of rooms.values()) {
+    pruneStalePlayers(room);
+    if (room.players.size === 0) continue;
     stepItems(room);
     broadcastState(room);
   }
@@ -116,6 +119,10 @@ function respondJson(res, status, data) {
 }
 
 function readFrames(client) {
+  if (client.buffer.length > 8192) {
+    client.socket.end();
+    return;
+  }
   while (client.buffer.length >= 2) {
     const first = client.buffer[0];
     const second = client.buffer[1];
@@ -132,6 +139,11 @@ function readFrames(client) {
       if (client.buffer.length < offset + 8) return;
       length = Number(client.buffer.readBigUInt64BE(offset));
       offset += 8;
+    }
+
+    if (length > 4096) {
+      client.socket.end();
+      return;
     }
 
     if (!masked || client.buffer.length < offset + 4 + length) return;
@@ -327,6 +339,7 @@ function firstSlot(room) {
 }
 
 function broadcastState(room) {
+  if (room.players.size === 0) return;
   room.updatedAt = Date.now();
   broadcast(room, {
     type: "state",
@@ -410,6 +423,16 @@ function cleanup() {
   for (const [code, room] of rooms.entries()) {
     if (room.players.size === 0 && now - room.updatedAt > 10 * 60 * 1000) {
       rooms.delete(code);
+    }
+  }
+}
+
+function pruneStalePlayers(room) {
+  const now = Date.now();
+  for (const player of room.players.values()) {
+    if (now - player.updatedAt > STALE_PLAYER_MS) {
+      player.client.socket.end();
+      room.players.delete(player.id);
     }
   }
 }
